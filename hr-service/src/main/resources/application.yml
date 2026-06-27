@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: hr-service
+  config:
+    import: optional:configserver:http://localhost:8888
+  datasource:
+    url: jdbc:mysql://localhost:3306/leave_mgmt?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: Kavya@1507
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 8084
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      hrBackend:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2000
+  retry:
+    instances:
+      hrBackend:
+        maxAttempts: 3
+        waitDuration: 1000

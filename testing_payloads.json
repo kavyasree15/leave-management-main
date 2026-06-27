@@ -1,0 +1,136 @@
+{
+  "instruction": "Copy and paste the JSON payloads below into the 'Body' tab (select 'raw' and 'JSON') in Postman. Make sure to run them in chronological order.",
+  "1_authentication": {
+    "1.1_register_manager": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/register",
+      "notes": "Registers a Manager. Note that managerId is null.",
+      "body": {
+        "username": "bhanu_manager",
+        "password": "manager123",
+        "role": "MANAGER",
+        "managerId": null,
+        "email": "manager@technova.com"
+      }
+    },
+    "1.2_register_employee": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/register",
+      "notes": "Registers an Employee reporting to Manager ID 1.",
+      "body": {
+        "username": "bhanu_employee",
+        "password": "employee123",
+        "role": "EMPLOYEE",
+        "managerId": 1,
+        "email": "employee@technova.com"
+      }
+    },
+    "1.3_register_hr_admin": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/register",
+      "notes": "Registers an HR Administrator for final approvals and reports.",
+      "body": {
+        "username": "bhanu_hr",
+        "password": "hr123",
+        "role": "HR",
+        "managerId": null,
+        "email": "hr@technova.com"
+      }
+    },
+    "1.4_login_as_employee": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/login",
+      "notes": "Login to receive the JWT Token.",
+      "body": {
+        "email": "employee@technova.com",
+        "password": "employee123"
+      }
+    },
+    "1.5_login_as_manager": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/login",
+      "notes": "Login to authorize employee requests.",
+      "body": {
+        "email": "manager@technova.com",
+        "password": "manager123"
+      }
+    },
+    "1.6_login_as_hr": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/login",
+      "notes": "Login to view reports and approve leaves > 10 days.",
+      "body": {
+        "email": "hr@technova.com",
+        "password": "hr123"
+      }
+    },
+    "1.7_login_as_admin": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/login",
+      "notes": "Login as the default administrator to approve newly registered accounts.",
+      "body": {
+        "email": "admin@technova.com",
+        "password": "admin123"
+      }
+    },
+    "1.8_approve_user_by_id": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/auth/approve/{userId}",
+      "notes": "Approve a user registration using Admin token. Replaces {userId} with the ID of the registered user (e.g. 1, 2). Returns string 'approved'.",
+      "body": {}
+    }
+  },
+  "2_attendance": {
+    "notes": "Requires Authorization Header: Bearer <JWT_TOKEN_FROM_EMPLOYEE_LOGIN>",
+    "2.1_check_in": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/attendance/checkin",
+      "body": {}
+    },
+    "2.2_check_out": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/attendance/checkout",
+      "body": {}
+    }
+  },
+  "3_leaves": {
+    "notes": "Requires Authorization Header: Bearer <JWT_TOKEN>",
+    "3.1_apply_for_casual_leave": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/leaves/apply",
+      "notes": "Employee applies for a 3-day casual leave.",
+      "body": {
+        "startDate": "2026-07-01",
+        "endDate": "2026-07-03",
+        "leaveType": "CASUAL",
+        "reason": "Family gathering event",
+        "managerId": 1
+      }
+    },
+    "3.2_apply_for_medical_leave_with_certificate": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/leaves/apply",
+      "notes": "Medical leave exceeding 3 days requires a medical certificate. The string below represents a Base64-encoded PDF dummy.",
+      "body": {
+        "startDate": "2026-07-10",
+        "endDate": "2026-07-15",
+        "leaveType": "MEDICAL",
+        "reason": "Surgery recovery",
+        "managerId": 1,
+        "medicalCertificate": "JVBERi0xLjQKJcFSnaerCjEgMCBvYmogPDwgL1R5cGUgL0NhdGFsb2cgL1BhZ2VzIDIgMCBSID4+IGVuZG9iagoyIDAgb2JqIDw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbIDMgMCBSIF0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL0NhbmNhcyAvUGFyZW50IDIgMCBSID4+IGVuZG9iago="
+      }
+    },
+    "3.3_apply_for_long_leave_escalating_to_hr": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/leaves/apply",
+      "notes": "Applying for leave > 10 days will automatically escalate to status PENDING_HR after manager approvals.",
+      "body": {
+        "startDate": "2026-08-01",
+        "endDate": "2026-08-15",
+        "leaveType": "PAID",
+        "reason": "Personal vacation block",
+        "managerId": 1
+      }
+    }
+  }
+}
