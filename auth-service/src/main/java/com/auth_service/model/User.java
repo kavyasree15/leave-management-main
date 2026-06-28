@@ -27,6 +27,21 @@ public class User {
     @Column(nullable = false)
     private boolean approved = false;
 
+    private String kycStatus; // PENDING, PENDING_MANAGER, APPROVED, REJECTED
+    private Long hrId;
+    private String panNumber;
+    private String aadhaarNumber;
+    private String panCardUrl;
+    private String aadhaarCardUrl;
+    private String passportUrl;
+    private String drivingLicenseUrl;
+    private String mobileNumber;
+    private String dob;
+    private String gender;
+    private String address;
+    private java.time.LocalDateTime approvalDate;
+    private String rejectionReason;
+
     // Constructors
     public User() {}
 
@@ -59,4 +74,46 @@ public class User {
 
     public boolean isApproved() { return approved; }
     public void setApproved(boolean approved) { this.approved = approved; }
+
+    public String getKycStatus() { return kycStatus; }
+    public void setKycStatus(String kycStatus) { this.kycStatus = kycStatus; }
+
+    public Long getHrId() { return hrId; }
+    public void setHrId(Long hrId) { this.hrId = hrId; }
+
+    public String getPanNumber() { return panNumber; }
+    public void setPanNumber(String panNumber) { this.panNumber = panNumber; }
+
+    public String getAadhaarNumber() { return aadhaarNumber; }
+    public void setAadhaarNumber(String aadhaarNumber) { this.aadhaarNumber = aadhaarNumber; }
+
+    public String getPanCardUrl() { return panCardUrl; }
+    public void setPanCardUrl(String panCardUrl) { this.panCardUrl = panCardUrl; }
+
+    public String getAadhaarCardUrl() { return aadhaarCardUrl; }
+    public void setAadhaarCardUrl(String aadhaarCardUrl) { this.aadhaarCardUrl = aadhaarCardUrl; }
+
+    public String getPassportUrl() { return passportUrl; }
+    public void setPassportUrl(String passportUrl) { this.passportUrl = passportUrl; }
+
+    public String getDrivingLicenseUrl() { return drivingLicenseUrl; }
+    public void setDrivingLicenseUrl(String drivingLicenseUrl) { this.drivingLicenseUrl = drivingLicenseUrl; }
+
+    public String getMobileNumber() { return mobileNumber; }
+    public void setMobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; }
+
+    public String getDob() { return dob; }
+    public void setDob(String dob) { this.dob = dob; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public java.time.LocalDateTime getApprovalDate() { return approvalDate; }
+    public void setApprovalDate(java.time.LocalDateTime approvalDate) { this.approvalDate = approvalDate; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 }

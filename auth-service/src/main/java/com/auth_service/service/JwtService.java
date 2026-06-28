@@ -15,13 +15,15 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    public String generateToken(Long id, String username, String role, Long managerId) {
+    public String generateToken(Long id, String username, String role, Long managerId, String kycStatus, Long hrId) {
         Algorithm algorithm = Algorithm.HMAC256(secret);
         return JWT.create()
                 .withSubject(username)
                 .withClaim("id", id)
                 .withClaim("role", role)
                 .withClaim("managerId", managerId)
+                .withClaim("kycStatus", kycStatus)
+                .withClaim("hrId", hrId)
                 .withIssuedAt(new Date())
                 .withExpiresAt(new Date(System.currentTimeMillis() + expiration))
                 .sign(algorithm);

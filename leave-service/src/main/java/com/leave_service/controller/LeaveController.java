@@ -18,9 +18,15 @@ public class LeaveController {
     @PostMapping("/apply")
     public ResponseEntity<?> applyLeave(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestHeader(value = "X-User-Kyc-Status", required = false) String kycStatus,
+            @RequestHeader(value = "X-User-Hr-Id", required = false) Long hrId,
             @RequestBody LeaveRequest request) {
+        if ("EMPLOYEE".equalsIgnoreCase(role) && !"APPROVED".equalsIgnoreCase(kycStatus)) {
+            return ResponseEntity.badRequest().body("KYC verification is required before applying for leaves");
+        }
         try {
-            return ResponseEntity.ok(leaveService.applyLeave(userId, request));
+            return ResponseEntity.ok(leaveService.applyLeave(userId, role, request, hrId));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -32,12 +38,14 @@ public class LeaveController {
             @RequestHeader("X-User-Id") Long userId,
             @RequestHeader("X-User-Role") String role) {
         try {
-            if ("MANAGER".equalsIgnoreCase(role)) {
+            if ("ADMIN".equalsIgnoreCase(role)) {
+                return ResponseEntity.ok(leaveService.approveAdmin(requestId, userId));
+            } else if ("MANAGER".equalsIgnoreCase(role)) {
                 return ResponseEntity.ok(leaveService.approveManager(requestId, userId));
             } else if ("HR".equalsIgnoreCase(role)) {
                 return ResponseEntity.ok(leaveService.approveHR(requestId, userId));
             } else {
-                return ResponseEntity.badRequest().body("Only Manager or HR can approve leave requests");
+                return ResponseEntity.badRequest().body("Only Manager, HR, or Admin can approve leave requests");
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -50,12 +58,14 @@ public class LeaveController {
             @RequestHeader("X-User-Id") Long userId,
             @RequestHeader("X-User-Role") String role) {
         try {
-            if ("MANAGER".equalsIgnoreCase(role)) {
+            if ("ADMIN".equalsIgnoreCase(role)) {
+                return ResponseEntity.ok(leaveService.rejectAdmin(requestId, userId));
+            } else if ("MANAGER".equalsIgnoreCase(role)) {
                 return ResponseEntity.ok(leaveService.rejectManager(requestId, userId));
             } else if ("HR".equalsIgnoreCase(role)) {
                 return ResponseEntity.ok(leaveService.rejectHR(requestId, userId));
             } else {
-                return ResponseEntity.badRequest().body("Only Manager or HR can reject leave requests");
+                return ResponseEntity.badRequest().body("Only Manager, HR, or Admin can reject leave requests");
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -74,7 +84,13 @@ public class LeaveController {
     }
 
     @GetMapping("/balance")
-    public ResponseEntity<LeaveBalance> getMyBalance(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<?> getMyBalance(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestHeader(value = "X-User-Kyc-Status", required = false) String kycStatus) {
+        if ("EMPLOYEE".equalsIgnoreCase(role) && !"APPROVED".equalsIgnoreCase(kycStatus)) {
+            return ResponseEntity.badRequest().body("KYC verification is required before checking leave balance");
+        }
         return ResponseEntity.ok(leaveService.getOrCreateBalance(userId));
     }
 
@@ -84,20 +100,29 @@ public class LeaveController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<LeaveRequest>> getMyLeaves(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<?> getMyLeaves(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestHeader(value = "X-User-Kyc-Status", required = false) String kycStatus) {
+        if ("EMPLOYEE".equalsIgnoreCase(role) && !"APPROVED".equalsIgnoreCase(kycStatus)) {
+            return ResponseEntity.badRequest().body("KYC verification is required before checking leave history");
+        }
         return ResponseEntity.ok(leaveService.getUserLeaves(userId));
     }
 
     @GetMapping("/pending")
     public ResponseEntity<?> getPendingRequests(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestHeader("X-User-Role") String role) {
-        if ("MANAGER".equalsIgnoreCase(role)) {
+            @RequestHeader("X-User-Role") String role,
+            @RequestHeader(value = "X-User-Hr-Id", required = false) Long hrId) {
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(leaveService.getPendingAdminApprovals());
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
             return ResponseEntity.ok(leaveService.getPendingManagerApprovals(userId));
         } else if ("HR".equalsIgnoreCase(role)) {
-            return ResponseEntity.ok(leaveService.getPendingHRApprovals());
+            return ResponseEntity.ok(leaveService.getPendingHRApprovals(hrId));
         } else {
-            return ResponseEntity.badRequest().body("Only Managers and HR have pending approval dashboards");
+            return ResponseEntity.badRequest().body("Only Admin, HR, and Managers have pending approval dashboards");
         }
     }
 

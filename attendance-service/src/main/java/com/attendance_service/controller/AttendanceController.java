@@ -17,7 +17,13 @@ public class AttendanceController {
     private AttendanceService attendanceService;
 
     @PostMapping("/checkin")
-    public ResponseEntity<?> checkIn(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<?> checkIn(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestHeader(value = "X-User-Kyc-Status", required = false) String kycStatus) {
+        if ("EMPLOYEE".equalsIgnoreCase(role) && !"APPROVED".equalsIgnoreCase(kycStatus)) {
+            return ResponseEntity.badRequest().body("KYC verification is required before accessing attendance");
+        }
         try {
             return ResponseEntity.ok(attendanceService.checkIn(userId));
         } catch (Exception e) {
@@ -26,7 +32,13 @@ public class AttendanceController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<?> checkOut(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<?> checkOut(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestHeader(value = "X-User-Kyc-Status", required = false) String kycStatus) {
+        if ("EMPLOYEE".equalsIgnoreCase(role) && !"APPROVED".equalsIgnoreCase(kycStatus)) {
+            return ResponseEntity.badRequest().body("KYC verification is required before accessing attendance");
+        }
         try {
             return ResponseEntity.ok(attendanceService.checkOut(userId));
         } catch (Exception e) {
@@ -35,12 +47,24 @@ public class AttendanceController {
     }
 
     @GetMapping("/today")
-    public ResponseEntity<Attendance> getTodayRecord(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<?> getTodayRecord(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestHeader(value = "X-User-Kyc-Status", required = false) String kycStatus) {
+        if ("EMPLOYEE".equalsIgnoreCase(role) && !"APPROVED".equalsIgnoreCase(kycStatus)) {
+            return ResponseEntity.badRequest().body("KYC verification is required before accessing attendance");
+        }
         return ResponseEntity.ok(attendanceService.getTodayRecord(userId));
     }
 
     @GetMapping("/history")
-    public ResponseEntity<List<Attendance>> getUserHistory(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<?> getUserHistory(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestHeader(value = "X-User-Kyc-Status", required = false) String kycStatus) {
+        if ("EMPLOYEE".equalsIgnoreCase(role) && !"APPROVED".equalsIgnoreCase(kycStatus)) {
+            return ResponseEntity.badRequest().body("KYC verification is required before accessing attendance");
+        }
         return ResponseEntity.ok(attendanceService.getUserHistory(userId));
     }
 

@@ -34,7 +34,7 @@ public class LeaveService {
                 .orElseGet(() -> leaveBalanceRepository.save(new LeaveBalance(userId)));
     }
 
-    public LeaveRequest applyLeave(Long userId, LeaveRequest request) {
+    public LeaveRequest applyLeave(Long userId, String role, LeaveRequest request, Long hrId) {
         request.setUserId(userId);
         
         if (request.getEndDate().isBefore(request.getStartDate())) {
@@ -71,15 +71,39 @@ public class LeaveService {
             }
         }
 
-        request.setStatus(LeaveStatus.PENDING_MANAGER);
+        // Determine status based on role
+        if ("HR".equalsIgnoreCase(role)) {
+            request.setStatus(LeaveStatus.PENDING_ADMIN);
+            request.setManagerId(0L); // Dummy managerId for schema non-null
+        } else if ("MANAGER".equalsIgnoreCase(role)) {
+            request.setStatus(LeaveStatus.PENDING_HR);
+            request.setManagerId(0L); // Dummy managerId
+            // Tag the leave with the manager's assigned HR so only that HR sees it
+            if (hrId != null) {
+                request.setHrId(hrId);
+            }
+        } else {
+            // Employee
+            request.setStatus(LeaveStatus.PENDING_MANAGER);
+            if (request.getManagerId() == null) {
+                throw new BadRequestException("Manager ID is mandatory for employees");
+            }
+        }
+
         request.setCreatedAt(LocalDateTime.now());
         request.setUpdatedAt(LocalDateTime.now());
 
         LeaveRequest saved = leaveRequestRepository.save(request);
         try {
             String subject = "New Leave Request Applied";
-            String body = "Employee ID " + userId + " requested " + request.getLeaveType() + " leave from " + request.getStartDate() + " to " + request.getEndDate();
-            kafkaTemplate.send("notification-topic", new NotificationEvent("Manager_" + request.getManagerId(), subject, body));
+            String body = "User ID " + userId + " requested " + request.getLeaveType() + " leave from " + request.getStartDate() + " to " + request.getEndDate();
+            String recipient = "Manager_" + request.getManagerId();
+            if (saved.getStatus() == LeaveStatus.PENDING_HR) {
+                recipient = "HR_all";
+            } else if (saved.getStatus() == LeaveStatus.PENDING_ADMIN) {
+                recipient = "Admin_0";
+            }
+            kafkaTemplate.send("notification-topic", new NotificationEvent(recipient, subject, body));
         } catch (Exception e) {
             // Log but don't fail business logic
         }
@@ -239,8 +263,64 @@ public class LeaveService {
         return leaveRequestRepository.findByManagerIdAndStatus(managerId, LeaveStatus.PENDING_MANAGER);
     }
 
-    public List<LeaveRequest> getPendingHRApprovals() {
+    public List<LeaveRequest> getPendingHRApprovals(Long hrId) {
+        if (hrId != null) {
+            // Return only leaves tagged to this specific HR (manager's leave requests)
+            // plus any employee long-leave escalations (hrId null on those, so return all PENDING_HR without hrId filter too)
+            List<LeaveRequest> hrTagged = leaveRequestRepository.findByHrIdAndStatus(hrId, LeaveStatus.PENDING_HR);
+            List<LeaveRequest> untagged = leaveRequestRepository.findByStatus(LeaveStatus.PENDING_HR)
+                    .stream().filter(r -> r.getHrId() == null).toList();
+            java.util.List<LeaveRequest> combined = new java.util.ArrayList<>(hrTagged);
+            combined.addAll(untagged);
+            return combined;
+        }
         return leaveRequestRepository.findByStatus(LeaveStatus.PENDING_HR);
+    }
+
+    public List<LeaveRequest> getPendingAdminApprovals() {
+        return leaveRequestRepository.findByStatus(LeaveStatus.PENDING_ADMIN);
+    }
+
+    @Transactional
+    public LeaveRequest approveAdmin(Long requestId, Long adminId) {
+        LeaveRequest request = leaveRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found with ID " + requestId));
+
+        if (request.getStatus() != LeaveStatus.PENDING_ADMIN) {
+            throw new BadRequestException("Request is not pending admin approval");
+        }
+
+        long duration = calculateBusinessDays(request.getStartDate(), request.getEndDate());
+        deductBalance(request.getUserId(), request.getLeaveType(), (int) duration);
+
+        request.setStatus(LeaveStatus.APPROVED);
+        request.setUpdatedAt(LocalDateTime.now());
+        LeaveRequest saved = leaveRequestRepository.save(request);
+        try {
+            String subject = "Leave Request Approved by Admin";
+            String body = "Leave request ID " + requestId + " has been approved by Admin";
+            kafkaTemplate.send("notification-topic", new NotificationEvent("Employee_" + saved.getUserId(), subject, body));
+        } catch (Exception e) {}
+        return saved;
+    }
+
+    public LeaveRequest rejectAdmin(Long requestId, Long adminId) {
+        LeaveRequest request = leaveRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found with ID " + requestId));
+
+        if (request.getStatus() != LeaveStatus.PENDING_ADMIN) {
+            throw new BadRequestException("Request is not pending admin approval");
+        }
+
+        request.setStatus(LeaveStatus.REJECTED);
+        request.setUpdatedAt(LocalDateTime.now());
+        LeaveRequest saved = leaveRequestRepository.save(request);
+        try {
+            String subject = "Leave Request Rejected by Admin";
+            String body = "Leave request ID " + requestId + " has been rejected by Admin";
+            kafkaTemplate.send("notification-topic", new NotificationEvent("Employee_" + saved.getUserId(), subject, body));
+        } catch (Exception e) {}
+        return saved;
     }
 
     public List<LeaveRequest> getAllLeaves() {

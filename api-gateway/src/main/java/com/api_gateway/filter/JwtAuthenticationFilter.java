@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter implements Filter {
         }
 
         // Skip JWT validation for public paths
-        if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/auth/managers") || path.startsWith("/actuator")) {
+        if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/managers") || path.startsWith("/actuator")) {
             chain.doFilter(request, response);
             return;
         }
@@ -55,6 +55,8 @@ public class JwtAuthenticationFilter implements Filter {
             String username = jwt.getSubject();
             String role = jwt.getClaim("role").asString();
             Long managerId = jwt.getClaim("managerId").asLong();
+            String kycStatus = jwt.getClaim("kycStatus").asString();
+            Long hrId = jwt.getClaim("hrId").asLong();
 
             // Wrap request to add headers
             HeaderMapRequestWrapper requestWrapper = new HeaderMapRequestWrapper(httpRequest);
@@ -62,6 +64,8 @@ public class JwtAuthenticationFilter implements Filter {
             if (username != null) requestWrapper.addHeader("X-User-Name", username);
             if (role != null) requestWrapper.addHeader("X-User-Role", role);
             if (managerId != null) requestWrapper.addHeader("X-User-Manager-Id", String.valueOf(managerId));
+            if (kycStatus != null) requestWrapper.addHeader("X-User-Kyc-Status", kycStatus);
+            if (hrId != null) requestWrapper.addHeader("X-User-Hr-Id", String.valueOf(hrId));
 
             chain.doFilter(requestWrapper, response);
         } catch (Exception e) {
