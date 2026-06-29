@@ -16,6 +16,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import com.leave_service.dto.NotificationEvent;
 import com.leave_service.exception.BadRequestException;
 import com.leave_service.exception.ResourceNotFoundException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Service
 public class LeaveService {
@@ -28,6 +29,17 @@ public class LeaveService {
 
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private Long getAssignedHrId(Long userId) {
+        try {
+            return jdbcTemplate.queryForObject("SELECT hr_id FROM users WHERE id = ?", Long.class, userId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     public LeaveBalance getOrCreateBalance(Long userId) {
         return leaveBalanceRepository.findByUserId(userId)
@@ -79,7 +91,10 @@ public class LeaveService {
             request.setStatus(LeaveStatus.PENDING_HR);
             request.setManagerId(0L); // Dummy managerId
             // Tag the leave with the manager's assigned HR so only that HR sees it
-            if (hrId != null) {
+            Long assignedHrId = getAssignedHrId(userId);
+            if (assignedHrId != null) {
+                request.setHrId(assignedHrId);
+            } else if (hrId != null) {
                 request.setHrId(hrId);
             }
         } else {
@@ -128,8 +143,12 @@ public class LeaveService {
         }
 
         long duration = calculateBusinessDays(request.getStartDate(), request.getEndDate());
-        if (duration >= 10) {
+        if (duration > 10) {
             request.setStatus(LeaveStatus.PENDING_HR);
+            Long assignedHrId = getAssignedHrId(request.getUserId());
+            if (assignedHrId != null) {
+                request.setHrId(assignedHrId);
+            }
         } else {
             // Approve and deduct balance
             deductBalance(request.getUserId(), request.getLeaveType(), (int) duration);

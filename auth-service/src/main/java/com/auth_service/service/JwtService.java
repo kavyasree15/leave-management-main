@@ -17,14 +17,18 @@ public class JwtService {
 
     public String generateToken(Long id, String username, String role, Long managerId, String kycStatus, Long hrId) {
         Algorithm algorithm = Algorithm.HMAC256(secret);
-        return JWT.create()
+        com.auth0.jwt.JWTCreator.Builder builder = JWT.create()
                 .withSubject(username)
                 .withClaim("id", id)
                 .withClaim("role", role)
-                .withClaim("managerId", managerId)
-                .withClaim("kycStatus", kycStatus)
-                .withClaim("hrId", hrId)
-                .withIssuedAt(new Date())
+                .withClaim("managerId", managerId != null ? managerId : 0L)
+                .withClaim("kycStatus", kycStatus);
+
+        if (hrId != null) {
+            builder = builder.withClaim("hrId", hrId);
+        }
+
+        return builder.withIssuedAt(new Date())
                 .withExpiresAt(new Date(System.currentTimeMillis() + expiration))
                 .sign(algorithm);
     }

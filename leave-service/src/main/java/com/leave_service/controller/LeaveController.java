@@ -120,7 +120,7 @@ public class LeaveController {
         } else if ("MANAGER".equalsIgnoreCase(role)) {
             return ResponseEntity.ok(leaveService.getPendingManagerApprovals(userId));
         } else if ("HR".equalsIgnoreCase(role)) {
-            return ResponseEntity.ok(leaveService.getPendingHRApprovals(hrId));
+            return ResponseEntity.ok(leaveService.getPendingHRApprovals(userId));
         } else {
             return ResponseEntity.badRequest().body("Only Admin, HR, and Managers have pending approval dashboards");
         }
