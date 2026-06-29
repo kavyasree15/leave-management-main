@@ -41,6 +41,14 @@ public class LeaveService {
         }
     }
 
+    private Long getAssignedManagerId(Long userId) {
+        try {
+            return jdbcTemplate.queryForObject("SELECT manager_id FROM users WHERE id = ?", Long.class, userId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public LeaveBalance getOrCreateBalance(Long userId) {
         return leaveBalanceRepository.findByUserId(userId)
                 .orElseGet(() -> leaveBalanceRepository.save(new LeaveBalance(userId)));
@@ -100,8 +108,11 @@ public class LeaveService {
         } else {
             // Employee
             request.setStatus(LeaveStatus.PENDING_MANAGER);
-            if (request.getManagerId() == null) {
-                throw new BadRequestException("Manager ID is mandatory for employees");
+            Long assignedManagerId = getAssignedManagerId(userId);
+            if (assignedManagerId != null) {
+                request.setManagerId(assignedManagerId);
+            } else {
+                throw new BadRequestException("No reporting manager has been assigned to you by HR yet. Please contact HR to map your manager.");
             }
         }
 

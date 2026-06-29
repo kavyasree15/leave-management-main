@@ -99,6 +99,16 @@ public class LeaveController {
         return ResponseEntity.ok(leaveService.getOrCreateBalance(userId));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getUserLeaves(
+            @PathVariable Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
+        if (!"MANAGER".equalsIgnoreCase(role) && !"HR".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(403).body("Unauthorized to view employee leaves");
+        }
+        return ResponseEntity.ok(leaveService.getUserLeaves(userId));
+    }
+
     @GetMapping("/my")
     public ResponseEntity<?> getMyLeaves(
             @RequestHeader("X-User-Id") Long userId,
