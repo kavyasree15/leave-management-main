@@ -31,11 +31,12 @@ public class LeaveService {
     private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private com.leave_service.client.AuthClient authClient;
 
     private Long getAssignedHrId(Long userId) {
         try {
-            return jdbcTemplate.queryForObject("SELECT hr_id FROM users WHERE id = ?", Long.class, userId);
+            com.leave_service.dto.UserDto user = authClient.getUserById(userId);
+            return user != null ? user.getHrId() : null;
         } catch (Exception e) {
             return null;
         }
@@ -43,7 +44,8 @@ public class LeaveService {
 
     private Long getAssignedManagerId(Long userId) {
         try {
-            return jdbcTemplate.queryForObject("SELECT manager_id FROM users WHERE id = ?", Long.class, userId);
+            com.leave_service.dto.UserDto user = authClient.getUserById(userId);
+            return user != null ? user.getManagerId() : null;
         } catch (Exception e) {
             return null;
         }

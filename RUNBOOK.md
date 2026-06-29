@@ -7,7 +7,7 @@ This guide describes how to run and test all microservices in the TechNova Leave
 ## 1. Prerequisites & Services Startup
 
 Make sure your local infrastructure services are running:
-* **MySQL Database:** Must be running on port `3306` (with credentials `root` / `root`, creates database `leave_mgmt` automatically).
+* **MySQL Database:** Must be running on port `3306` (credentials: `root` / `Kavya@1507`). Four dedicated databases are auto-created on first startup: `leave_mgmt_auth`, `leave_mgmt_leave`, `leave_mgmt_attendance`, `leave_mgmt_hr`.
 * **Apache Kafka:** Must be running on port `9092` with topic `notification-topic` created.
 
 ### 1.1 Starting the Services (Order is Automatic)

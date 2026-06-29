@@ -24,7 +24,10 @@ graph TD
     Eureka[Eureka Registry - Port 8761] <--> |Service Registry & Discovery| Gateway & Auth & Leave & Attendance & HR & Notification
 
     %% Database Layer
-    Auth & Leave & Attendance & HR --> |Shared Schema / Isolated Tables| MySQL[(MySQL DB: leave_mgmt)]
+    Auth --> MySQL_Auth[(MySQL DB: leave_mgmt_auth)]
+    Leave --> MySQL_Leave[(MySQL DB: leave_mgmt_leave)]
+    Attendance --> MySQL_Attend[(MySQL DB: leave_mgmt_attendance)]
+    HR --> MySQL_HR[(MySQL DB: leave_mgmt_hr)]
 
     %% Event-Driven Notification Channel
     Leave --> |Publish Leave Events| Kafka[Apache Kafka Broker - Port 9092]
@@ -38,7 +41,7 @@ graph TD
 
 ### A. Shared Database Schema with Table Isolation
 * **Why:** In traditional microservices, each service has its own database. However, for a tightly coupled domain like HRMS, setting up complex distributed transactions or Feign Client queries between `auth-service` and `leave-service` for simple user lookups adds heavy network latency and complexity.
-* **How:** All microservices connect to a single MySQL database schema (`leave_mgmt`). However, each microservice manages and is responsible for its own set of tables (e.g., `auth-service` owns `users`, `leave-service` owns `leave_requests` and `leave_balances`, `attendance-service` owns `attendance`). To query cross-domain data (e.g., fetching a manager's assigned HR name inside `leave-service`), services utilize lightweight, highly optimized read-only native SQL queries via `JdbcTemplate` instead of slow API calls.
+* **How:** Each microservice connects to its **own dedicated MySQL database** following the database-per-service pattern — `auth-service` → `leave_mgmt_auth`, `leave-service` → `leave_mgmt_leave`, `attendance-service` → `leave_mgmt_attendance`, `hr-service` → `leave_mgmt_hr`. MySQL auto-creates each database on first startup via `createDatabaseIfNotExist=true`. Hibernate manages schema creation/update per service. Cross-domain reads (e.g., fetching manager info in `leave-service`) use lightweight Feign client API calls to the owning service.
 
 ### B. Stateless JWT Authentication & Gateway Header Propagation
 * **Why:** To make the microservices horizontally scalable, the backend must be completely stateless. Sessions should not be stored in server memory.
@@ -167,7 +170,7 @@ Inside the **My Team** section, managers can inspect team details.
 ### Prerequisites
 1. **JDK 21** or **25** (Adoptium Temurin).
 2. **Apache Kafka** running locally on port `9092`.
-3. **MySQL Server** running on port `3306` with credentials matching `application.yml` (database name: `leave_mgmt`).
+3. **MySQL Server** running on port `3306` with credentials `root` / `Kavya@1507`. Four databases are auto-created on first startup: `leave_mgmt_auth`, `leave_mgmt_leave`, `leave_mgmt_attendance`, `leave_mgmt_hr`.
 
 ### Step-by-Step Launch Order
 Run the services in this exact order to allow service registration and configuration loading to succeed without errors:

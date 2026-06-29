@@ -62,7 +62,15 @@ public class AuthController {
     @PostMapping("/users/{userId}/assign-manager")
     public ResponseEntity<UserResponse> assignManager(
             @PathVariable Long userId,
-            @RequestParam("managerId") Long managerId) {
+            @RequestParam("managerId") Long managerId,
+            @RequestHeader("X-User-Id") Long callerId,
+            @RequestHeader("X-User-Role") String callerRole) {
+        if (!"ADMIN".equalsIgnoreCase(callerRole)) {
+            UserResponse employee = authService.getUserById(userId);
+            if (!callerId.equals(employee.getHrId())) {
+                throw new com.auth_service.exception.UnauthorizedException("Only the assigned HR coordinator can map a manager to this employee");
+            }
+        }
         return ResponseEntity.ok(authService.assignManager(userId, managerId));
     }
 
